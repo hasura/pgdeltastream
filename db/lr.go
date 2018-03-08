@@ -21,20 +21,21 @@ func LRStream(session *types.Session, slotName string) {
 	}
 	//ctx, cancelFn := context.WithTimeout(context.Background(), 5*time.Minute)
 	//defer cancelFn()
-	ctx := context.TODO()
+	ctx := context.TODO() // is this ok?
 	for {
 		log.Info("Waiting for message")
-
+		// TODO: check if ws is open
 		message, err := session.ReplConn.WaitForReplicationMessage(ctx)
 		if err != nil {
 			log.WithError(err).Errorf("%s", reflect.TypeOf(err))
 		}
 
 		if message.WalMessage != nil {
-
-			//log.Info(pgx.FormatLSN(message.WalMessage.WalStart))
-			log.Info(string(message.WalMessage.WalData))
 			walData := message.WalMessage.WalData
+			log.Infof("Received replication message: %s", string(walData))
+
+			// send message over ws
+			// TODO: check if ws is open
 			session.WSConn.WriteMessage(websocket.TextMessage, walData)
 		}
 
@@ -51,18 +52,26 @@ func LRStream(session *types.Session, slotName string) {
 			}
 		}
 
-		_, msg, err := session.WSConn.ReadMessage()
+	}
+}
+
+// LRListenAck listens on the websocket for ack messages
+// The commited LSN is extracted and is updated to the server
+func LRListenAck(session *types.Session) {
+	jsonMsg := make(map[string]string)
+	for {
+		log.Info("Listening for ws message")
+		//_, msg, err := session.WSConn.ReadMessage()
+		err := session.WSConn.ReadJSON(&jsonMsg)
 		if err != nil {
 			log.WithError(err).Error("Error reading from websocket")
 			//break
 		}
-		processWSMessage(session, msg) // TODO
+		log.Info("Received ws message: ", jsonMsg)
+		lsn := jsonMsg["lsn"] // TODO: to be read from ws
+		lrAckLSN(session, lsn)
+		//processWSMessage(session, msg) // TODO
 	}
-}
-
-func processWSMessage(session *types.Session, msg []byte) {
-
-	//LRAckLSN(session, restartLSNStr)
 }
 
 // sendStandbyStatus sends a StandbyStatus object with the current RestartLSN value to the server
@@ -73,6 +82,7 @@ func sendStandbyStatus(session *types.Session) error {
 	}
 	log.Info(standbyStatus)
 	standbyStatus.ReplyRequested = 0
+	log.Info("Sending Standby Status with LSN ", pgx.FormatLSN(session.RestartLSN))
 	err = session.ReplConn.SendStandbyStatus(standbyStatus)
 	if err != nil {
 		return fmt.Errorf("Unable to send StandbyStatus object: %s", err)
@@ -81,8 +91,12 @@ func sendStandbyStatus(session *types.Session) error {
 	return nil
 }
 
+func processWSMessage(session *types.Session, msg []byte) {
+	//LRAckLSN(session, restartLSNStr)
+}
+
 // LRAckLSN will set the flushed LSN value and trigger a StandbyStatus update
-func LRAckLSN(session *types.Session, restartLSNStr string) error {
+func lrAckLSN(session *types.Session, restartLSNStr string) error {
 	restartLSN, err := pgx.ParseLSN(restartLSNStr)
 	if err != nil {
 		return err
