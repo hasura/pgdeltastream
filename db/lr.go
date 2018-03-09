@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/gorilla/websocket"
 
@@ -12,25 +13,43 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// LRStream will start streaming changes from the given slotName over the websocket connection
-func LRStream(session *types.Session, slotName string) {
+var statusHeartbeatIntervalSeconds = 10
 
-	err := session.ReplConn.StartReplication(slotName, session.RestartLSN, -1, "\"include-lsn\" 'on'", "\"pretty-print\" 'off'")
+// LRStream will start streaming changes from the given slotName over the websocket connection
+func LRStream(session *types.Session, ctx context.Context) {
+	log.Info("Starting replication")
+	err := session.ReplConn.StartReplication(session.SlotName, session.RestartLSN, -1, "\"include-lsn\" 'on'", "\"pretty-print\" 'off'")
+	defer func() {
+	}()
+
 	if err != nil {
 		log.Error(err)
 	}
+	go sendPeriodicHeartbeats(session)
 	//ctx, cancelFn := context.WithTimeout(context.Background(), 5*time.Minute)
 	//defer cancelFn()
-	ctx := context.TODO() // is this ok?
+	//ctx := context.TODO() // is this ok?
 	for {
+		if !session.ReplConn.IsAlive() {
+			log.WithField("CauseOfDeath", session.ReplConn.CauseOfDeath()).Error("Looks like the connection is dead")
+		}
 		log.Info("Waiting for message")
 		// TODO: check if ws is open
 		message, err := session.ReplConn.WaitForReplicationMessage(ctx)
 		if err != nil {
 			log.WithError(err).Errorf("%s", reflect.TypeOf(err))
-		}
 
+			if ctx.Err() != nil {
+				// context cancelled, exit
+				log.Warn("Websocket closed")
+				return
+			}
+		}
 		if message.WalMessage != nil {
+			if message == nil {
+				log.Error("Message nil")
+				continue
+			}
 			walData := message.WalMessage.WalData
 			log.Infof("Received replication message: %s", string(walData))
 
@@ -40,11 +59,12 @@ func LRStream(session *types.Session, slotName string) {
 		}
 
 		if message.ServerHeartbeat != nil {
-			log.Info("Heartbeat requested")
+			log.Info("Received server heartbeat")
 			// set the flushed LSN (and other LSN values) in the standby status and send to PG
 			log.Info(message.ServerHeartbeat)
 			// send Standby Status if the server is requesting for a reply
 			if message.ServerHeartbeat.ReplyRequested == 1 {
+				log.Info("Status requested")
 				err = sendStandbyStatus(session)
 				if err != nil {
 					log.WithError(err).Error("Unable to send standby status")
@@ -57,7 +77,7 @@ func LRStream(session *types.Session, slotName string) {
 
 // LRListenAck listens on the websocket for ack messages
 // The commited LSN is extracted and is updated to the server
-func LRListenAck(session *types.Session) {
+func LRListenAck(session *types.Session, wsErr chan<- error) {
 	jsonMsg := make(map[string]string)
 	for {
 		log.Info("Listening for ws message")
@@ -65,12 +85,12 @@ func LRListenAck(session *types.Session) {
 		err := session.WSConn.ReadJSON(&jsonMsg)
 		if err != nil {
 			log.WithError(err).Error("Error reading from websocket")
-			//break
+			wsErr <- err // send the error to the channel to terminate connection
+			return
 		}
 		log.Info("Received ws message: ", jsonMsg)
-		lsn := jsonMsg["lsn"] // TODO: to be read from ws
+		lsn := jsonMsg["lsn"]
 		lrAckLSN(session, lsn)
-		//processWSMessage(session, msg) // TODO
 	}
 }
 
@@ -91,8 +111,15 @@ func sendStandbyStatus(session *types.Session) error {
 	return nil
 }
 
-func processWSMessage(session *types.Session, msg []byte) {
-	//LRAckLSN(session, restartLSNStr)
+// send periodic keep alive hearbeats to the server so that the connection isn't dropped
+func sendPeriodicHeartbeats(session *types.Session) {
+	for range time.Tick(time.Duration(statusHeartbeatIntervalSeconds) * time.Second) {
+		log.Info("Sending periodic status heartbeat")
+		err := sendStandbyStatus(session)
+		if err != nil {
+			log.WithError(err).Error("Failed to send status heartbeat")
+		}
+	}
 }
 
 // LRAckLSN will set the flushed LSN value and trigger a StandbyStatus update

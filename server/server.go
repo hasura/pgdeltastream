@@ -1,6 +1,10 @@
 package server
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/hasura/pgdeltastream/db"
@@ -16,7 +20,10 @@ func StartServer() {
 		v1.GET("/init", func(c *gin.Context) {
 			// create replication slot ex and get snapshot name, consistent point
 			// return slotname (so that any kind of failure can be restarted from)
+
+			// TODO: close the session before initiating a new one
 			session = db.Init()
+
 			c.JSON(200, gin.H{
 				"slotName": session.SlotName,
 			})
@@ -27,12 +34,11 @@ func StartServer() {
 
 			snapshotRoute.POST("/data", func(c *gin.Context) {
 				// get data with table, offset, limits
-
 				var postData types.SnapshotDataJSON
 				err := c.ShouldBindJSON(&postData)
 				if err != nil {
 					log.WithError(err).Error("Invalid input JSON")
-					c.AbortWithError(400, err)
+					c.AbortWithError(http.StatusBadRequest, err)
 					return
 				}
 
@@ -41,7 +47,7 @@ func StartServer() {
 				data, err := db.SnapshotData(session, postData.Table, postData.Offset, postData.Limit)
 				if err != nil {
 					log.WithError(err).Error("Unable to get snapshot data")
-					c.AbortWithError(500, err)
+					c.AbortWithError(http.StatusInternalServerError, err)
 					return
 				}
 				c.JSON(200, data)
@@ -59,14 +65,39 @@ func StartServer() {
 		{
 			lrRoute.GET("/stream", func(c *gin.Context) { // /stream?slotName=my_slot
 				// start streaming from slot name
-				slotName := "test" // TODO extract from url params
+				slotName := c.Query("slotName")
+				if slotName == "" {
+					e := fmt.Errorf("No slotName provided")
+					log.Error(e)
+					c.AbortWithError(http.StatusBadRequest, e)
+					return
+				}
+
+				log.Info("LR Stream requested for slot ", slotName)
+				session.SlotName = slotName
+
+				// now upgrade the HTTP  connection to a websocket connection
 				wsConn, err := wsupgrader.Upgrade(c.Writer, c.Request, nil)
 				if err != nil {
 					log.Error(err)
 				}
 				session.WSConn = wsConn
-				go db.LRListenAck(session)     // concurrently listen for ack messages
-				db.LRStream(session, slotName) // err?
+
+				ctx, cancelFunc := context.WithCancel(context.Background())
+				wsErr := make(chan error, 1)
+				go db.LRListenAck(session, wsErr) // concurrently listen for ack messages
+				go db.LRStream(session, ctx)      // err?
+
+				select {
+				/*case <-c.Writer.CloseNotify(): // ws closed
+				log.Warn("Websocket connection closed. Cancelling context.")
+				cancelFunc()
+				*/
+				case <-wsErr: // ws closed
+					log.Warn("Websocket connection closed. Cancelling context.")
+					cancelFunc()
+				}
+
 			})
 		}
 	}
