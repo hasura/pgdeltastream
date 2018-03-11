@@ -17,10 +17,10 @@ var statusHeartbeatIntervalSeconds = 10
 // LRStream will start streaming changes from the given slotName over the websocket connection
 func LRStream(session *types.Session) {
 	log.Infof("Starting replication for slot '%s' from LSN %s", session.SlotName, pgx.FormatLSN(session.RestartLSN))
-	// TODO: init replconn long early
 	err := session.ReplConn.StartReplication(session.SlotName, session.RestartLSN, -1, "\"include-lsn\" 'on'", "\"pretty-print\" 'off'")
 	if err != nil {
 		log.Error(err)
+		return
 	}
 	go sendPeriodicHeartbeats(session)
 
@@ -95,14 +95,14 @@ func LRListenAck(session *types.Session, wsErr chan<- error) {
 func sendStandbyStatus(session *types.Session) error {
 	standbyStatus, err := pgx.NewStandbyStatus(session.RestartLSN)
 	if err != nil {
-		return fmt.Errorf("Unable to create StandbyStatus object: %s", err)
+		return fmt.Errorf("unable to create StandbyStatus object: %s", err)
 	}
 	log.Info(standbyStatus)
 	standbyStatus.ReplyRequested = 0
 	log.Info("Sending Standby Status with LSN ", pgx.FormatLSN(session.RestartLSN))
 	err = session.ReplConn.SendStandbyStatus(standbyStatus)
 	if err != nil {
-		return fmt.Errorf("Unable to send StandbyStatus object: %s", err)
+		return fmt.Errorf("unable to send StandbyStatus object: %s", err)
 	}
 
 	return nil

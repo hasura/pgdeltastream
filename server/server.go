@@ -24,7 +24,7 @@ func StartServer(hostPort string) {
 	v1 := r.Group("/v1")
 	{
 		v1.GET("/init", func(c *gin.Context) {
-			err = initDB(c, session)
+			err = initDB(session)
 			if err != nil {
 				e := fmt.Sprintf("unable to init session")
 				log.WithError(err).Error(e)
@@ -59,7 +59,7 @@ func StartServer(hostPort string) {
 
 				log.Infof("Snapshot data requested for table: %s, offset: %d, limit: %d", postData.Table, postData.Offset, postData.Limit)
 
-				data, err := snapshotData(c, session, postData.Table, postData.Offset, postData.Limit)
+				data, err := snapshotData(session, postData.Table, postData.Offset, postData.Limit)
 				if err != nil {
 					e := fmt.Sprintf("unable to get snapshot data")
 					log.WithError(err).Error(e)
@@ -103,7 +103,7 @@ func StartServer(hostPort string) {
 				session.WSConn = wsConn
 
 				// begin streaming
-				err = lrStream(c, session)
+				err = lrStream(session)
 				if err != nil {
 					e := fmt.Sprintf("could not create stream")
 					log.WithError(err).Error(e)
@@ -117,7 +117,7 @@ func StartServer(hostPort string) {
 	r.Run(hostPort)
 }
 
-func initDB(c *gin.Context, session *types.Session) error {
+func initDB(session *types.Session) error {
 	// create replication slot ex and get snapshot name, consistent point
 	// return slotname (so that any kind of failure can be restarted from)
 	var err error
@@ -131,11 +131,11 @@ func initDB(c *gin.Context, session *types.Session) error {
 	return nil
 }
 
-func snapshotData(c *gin.Context, session *types.Session, tableName string, offset, limit int) ([]map[string]interface{}, error) {
+func snapshotData(session *types.Session, tableName string, offset, limit int) ([]map[string]interface{}, error) {
 	return db.SnapshotData(session, tableName, offset, limit)
 }
 
-func lrStream(c *gin.Context, session *types.Session) error {
+func lrStream(session *types.Session) error {
 	// reset the connections
 	err := resetSession(session)
 	if err != nil {
