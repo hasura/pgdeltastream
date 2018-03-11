@@ -23,21 +23,19 @@ func LRStream(session *types.Session) {
 		log.Error(err)
 	}
 	go sendPeriodicHeartbeats(session)
-	//ctx, cancelFn := context.WithTimeout(context.Background(), 5*time.Minute)
-	//defer cancelFn()
-	//ctx := context.TODO() // is this ok?
+
 	for {
 		if !session.ReplConn.IsAlive() {
 			log.WithField("CauseOfDeath", session.ReplConn.CauseOfDeath()).Error("Looks like the connection is dead")
 		}
 		log.Info("Waiting for message")
-		// TODO: check if ws is open
 
 		ctx := session.Ctx
 		message, err := session.ReplConn.WaitForReplicationMessage(ctx)
 		if err != nil {
 			log.WithError(err).Errorf("%s", reflect.TypeOf(err))
 
+			// check if error is because of the context being cancelled
 			if ctx.Err() != nil {
 				// context cancelled, exit
 				log.Warn("Websocket closed")

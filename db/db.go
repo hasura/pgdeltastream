@@ -1,7 +1,10 @@
 package db
 
 import (
-	"context"
+	"fmt"
+	"math/rand"
+	"strings"
+	"time"
 
 	"github.com/hasura/pgdeltastream/types"
 	log "github.com/sirupsen/logrus"
@@ -9,31 +12,52 @@ import (
 	"github.com/jackc/pgx"
 )
 
-var config = pgx.ConnConfig{
-	Host:     "localhost",
-	Database: "siddb",
+var dbConfig = pgx.ConnConfig{}
+
+// Initialize the database configuration
+func CreateConfig(dbName, dbHost string) {
+	dbConfig.Database = dbName
+	dbConfig.Host = dbHost // port will be 5432 (default)
 }
 
 // Init function
-// - creates a replication connection
-// - creates a replication slot
-// - gets the consistent point LSN and snapshot name
 // - creates a db connection
-// - finally returns a Session object containing the above
+// - creates a replication connection
+// - delete existing replication slots
+// - creates a new replication slot
+// - gets the consistent point LSN and snapshot name
+// - populates the Session object
 func Init(session *types.Session) error {
-	log.Info("Creating replication connection to ", config.Database)
-	replConn, err := pgx.ReplicationConnect(config)
+
+	// create a regular pg connection for use by transactions
+	log.Info("Creating regular connection to db")
+	pgConn, err := pgx.Connect(dbConfig)
+	if err != nil {
+		return err
+	}
+
+	session.PGConn = pgConn
+
+	log.Info("Creating replication connection to ", dbConfig.Database)
+	replConn, err := pgx.ReplicationConnect(dbConfig)
 	if err != nil {
 		return err
 	}
 
 	session.ReplConn = replConn
 
+	// delete all existing slots
+	err = deleteAllSlots(session)
+	if err != nil {
+		log.WithError(err).Error("could not delete replication slots")
+	}
+
+	// create new slots
 	slotName := generateSlotName()
 	session.SlotName = slotName
 
 	log.Info("Creating replication slot ", slotName)
-	consistentPoint, snapshotName, err := replConn.CreateReplicationSlotEx(slotName, "wal2json")
+	consistentPoint, snapshotName, err := session.ReplConn.CreateReplicationSlotEx(slotName, "wal2json")
 	if err != nil {
 		return err
 	}
@@ -46,15 +70,6 @@ func Init(session *types.Session) error {
 	session.RestartLSN = lsn
 	session.SnapshotName = snapshotName
 
-	// create a regular pg connection for use by transactions
-	log.Info("Creating regular connection to db")
-	pgConn, err := pgx.Connect(config)
-	if err != nil {
-		return err
-	}
-
-	session.PGConn = pgConn
-
 	return nil
 }
 
@@ -66,7 +81,7 @@ func CheckAndCreateReplConn(session *types.Session) error {
 		}
 	}
 
-	replConn, err := pgx.ReplicationConnect(config)
+	replConn, err := pgx.ReplicationConnect(dbConfig)
 	if err != nil {
 		return err
 	}
@@ -75,45 +90,51 @@ func CheckAndCreateReplConn(session *types.Session) error {
 	return nil
 }
 
+// generates a random slot name which can be remembered
 func generateSlotName() string {
-	return "slot_ex"
+	// list of random words
+	strs := []string{
+		"gigantic",
+		"scold",
+		"greasy",
+		"shaggy",
+		"wasteful",
+		"few",
+		"face",
+		"pet",
+		"ablaze",
+		"mundane",
+	}
+
+	rand.Seed(time.Now().Unix())
+
+	// generate name such as gigantic20
+	name := fmt.Sprintf("delta_%s%d", strs[rand.Intn(len(strs))], rand.Intn(100))
+
+	return name
 }
 
-func DBConnect1() {
-	config := pgx.ConnConfig{
-		Host:     "localhost",
-		Database: "siddb",
+// delete all old slots that were created by us
+func deleteAllSlots(session *types.Session) error {
+	rows, err := session.PGConn.Query("SELECT slot_name FROM pg_replication_slots")
+	if err != nil {
+		return err
 	}
+	for rows.Next() {
+		var slotName string
+		rows.Scan(&slotName)
 
-	replConn, err := pgx.ReplicationConnect(config)
-	defer replConn.Close()
-	if err != nil {
-		log.Error(err)
-	}
-	err = replConn.CreateReplicationSlot("my_slot", "wal2json")
-	if err != nil {
-		log.Error(err)
-	}
-	restartLsn, _ := pgx.ParseLSN("0/15E9108")
-	err = replConn.StartReplication("test", restartLsn, -1, "\"include-lsn\" 'on'", "\"pretty-print\" 'off'")
-	if err != nil {
-		log.Error(err)
-	}
+		// only delete slots created by this program
+		if !strings.Contains(slotName, "delta_") {
+			continue
+		}
 
-	for {
-		log.Info("Waiting for message")
-		message, err := replConn.WaitForReplicationMessage(context.TODO())
+		log.Infof("Deleting replication slot %s", slotName)
+		err = session.ReplConn.DropReplicationSlot(slotName)
+		//_,err = session.PGConn.Exec(fmt.Sprintf("SELECT pg_drop_replication_slot(\"%s\")", slotName))
 		if err != nil {
-			log.Error(err)
-		}
-
-		if message.WalMessage != nil {
-			log.Info(pgx.FormatLSN(message.WalMessage.WalStart))
-			log.Info(string(message.WalMessage.WalData))
+			log.WithError(err).Error("could not delete slot ", slotName)
 		}
 	}
-
-	//c, _ := replConn.Exec("select * from test_table")
-	//fmt.Println(c)
-
+	return nil
 }
