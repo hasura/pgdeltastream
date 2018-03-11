@@ -11,7 +11,7 @@ import (
 
 func SnapshotData(session *types.Session, tableName string, offset, limit int) ([]map[string]interface{}, error) {
 	log.Info("Begin transaction")
-	tx, err := session.Conn.BeginEx(context.TODO(), &pgx.TxOptions{
+	tx, err := session.PGConn.BeginEx(context.TODO(), &pgx.TxOptions{
 		IsoLevel: pgx.RepeatableRead,
 	})
 

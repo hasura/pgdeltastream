@@ -9,28 +9,33 @@ import (
 	"github.com/jackc/pgx"
 )
 
+var config = pgx.ConnConfig{
+	Host:     "localhost",
+	Database: "siddb",
+}
+
 // Init function
 // - creates a replication connection
 // - creates a replication slot
 // - gets the consistent point LSN and snapshot name
 // - creates a db connection
 // - finally returns a Session object containing the above
-func Init() *types.Session {
-	config := pgx.ConnConfig{
-		Host:     "localhost",
-		Database: "siddb",
-	}
-
+func Init(session *types.Session) error {
 	log.Info("Creating replication connection to ", config.Database)
 	replConn, err := pgx.ReplicationConnect(config)
 	if err != nil {
-		log.Error(err)
+		return err
 	}
-	slotName := "slot_ex" // TODO: generate this
+
+	session.ReplConn = replConn
+
+	slotName := generateSlotName()
+	session.SlotName = slotName
+
 	log.Info("Creating replication slot ", slotName)
 	consistentPoint, snapshotName, err := replConn.CreateReplicationSlotEx(slotName, "wal2json")
 	if err != nil {
-		log.Error(err)
+		return err
 	}
 
 	log.Infof("Created replication slot \"%s\" with consistent point LSN = %s, snapshot name = %s",
@@ -38,22 +43,40 @@ func Init() *types.Session {
 
 	lsn, _ := pgx.ParseLSN(consistentPoint)
 
+	session.RestartLSN = lsn
+	session.SnapshotName = snapshotName
+
 	// create a regular pg connection for use by transactions
 	log.Info("Creating regular connection to db")
-	conn, err := pgx.Connect(config)
+	pgConn, err := pgx.Connect(config)
 	if err != nil {
-		log.Error(err)
+		return err
 	}
 
-	session := types.Session{
-		ReplConn:     replConn,
-		Conn:         conn,
-		RestartLSN:   lsn,
-		SnapshotName: snapshotName,
-		SlotName:     slotName,
+	session.PGConn = pgConn
+
+	return nil
+}
+
+func CheckAndCreateReplConn(session *types.Session) error {
+	if session.ReplConn != nil {
+		if session.ReplConn.IsAlive() {
+			// reuse the existing connection (or close it nonetheless?)
+			return nil
+		}
 	}
 
-	return &session
+	replConn, err := pgx.ReplicationConnect(config)
+	if err != nil {
+		return err
+	}
+	session.ReplConn = replConn
+
+	return nil
+}
+
+func generateSlotName() string {
+	return "slot_ex"
 }
 
 func DBConnect1() {

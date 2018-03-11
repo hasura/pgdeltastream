@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"time"
@@ -16,12 +15,10 @@ import (
 var statusHeartbeatIntervalSeconds = 10
 
 // LRStream will start streaming changes from the given slotName over the websocket connection
-func LRStream(session *types.Session, ctx context.Context) {
-	log.Info("Starting replication")
+func LRStream(session *types.Session) {
+	log.Infof("Starting replication for slot '%s' from LSN %s", session.SlotName, pgx.FormatLSN(session.RestartLSN))
+	// TODO: init replconn long early
 	err := session.ReplConn.StartReplication(session.SlotName, session.RestartLSN, -1, "\"include-lsn\" 'on'", "\"pretty-print\" 'off'")
-	defer func() {
-	}()
-
 	if err != nil {
 		log.Error(err)
 	}
@@ -35,6 +32,8 @@ func LRStream(session *types.Session, ctx context.Context) {
 		}
 		log.Info("Waiting for message")
 		// TODO: check if ws is open
+
+		ctx := session.Ctx
 		message, err := session.ReplConn.WaitForReplicationMessage(ctx)
 		if err != nil {
 			log.WithError(err).Errorf("%s", reflect.TypeOf(err))
@@ -113,13 +112,21 @@ func sendStandbyStatus(session *types.Session) error {
 
 // send periodic keep alive hearbeats to the server so that the connection isn't dropped
 func sendPeriodicHeartbeats(session *types.Session) {
-	for range time.Tick(time.Duration(statusHeartbeatIntervalSeconds) * time.Second) {
-		log.Info("Sending periodic status heartbeat")
-		err := sendStandbyStatus(session)
-		if err != nil {
-			log.WithError(err).Error("Failed to send status heartbeat")
+	for {
+		select {
+		case <-session.Ctx.Done():
+			return
+		case <-time.Tick(time.Duration(statusHeartbeatIntervalSeconds) * time.Second):
+			{
+				log.Info("Sending periodic status heartbeat")
+				err := sendStandbyStatus(session)
+				if err != nil {
+					log.WithError(err).Error("Failed to send status heartbeat")
+				}
+			}
 		}
 	}
+
 }
 
 // LRAckLSN will set the flushed LSN value and trigger a StandbyStatus update
