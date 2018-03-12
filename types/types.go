@@ -27,3 +27,16 @@ type SnapshotDataJSON struct {
 	Offset int    `json:"offset"`
 	Limit  int    `json:"limit"`
 }
+
+type Wal2JSONEvent struct {
+	NextLSN string `json:"nextlsn"`
+	Change  []map[string]interface{}
+}
+
+/*
+type Wal2JSONChange struct{
+	Kind string `json:"kind"`
+	Schema string `json:"schema"`
+
+}
+*/
