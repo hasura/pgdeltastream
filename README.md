@@ -48,6 +48,7 @@ $ docker run \
     -e PGPORT=5432 \
     -e SERVERHOST="localhost" \
     -e SERVERPORT=12312 \
+    --net host \
     -it sidmutha/pgdeltastream:v0.1
 
 ```
