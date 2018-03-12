@@ -17,7 +17,7 @@ var wsupgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func StartServer(hostPort string) {
+func StartServer(host, port string) {
 	var err error
 	session := &types.Session{}
 	r := gin.Default()
@@ -114,7 +114,7 @@ func StartServer(hostPort string) {
 		}
 	}
 
-	r.Run(hostPort)
+	r.Run(fmt.Sprintf("%s:%d", host, port))
 }
 
 func initDB(session *types.Session) error {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/hasura/pgdeltastream/db"
 	"github.com/hasura/pgdeltastream/server"
@@ -9,16 +10,19 @@ import (
 )
 
 func main() {
-	// args: dbname, dbhost, server hostport
-	if len(os.Args) != 4 {
-		log.Fatal("Run with args: dbName dbHost serverHostPort")
+	// args: dbname, pguser, pghost, pgport, server host server port
+	if len(os.Args) != 7 {
+		log.Fatal("Run with args: dbName pgHost pgPort serverHost serverPort")
 	}
 	dbName := os.Args[1]
-	dbHost := os.Args[2]
-	serverHostPort := os.Args[3]
+	pgUser := os.Args[2]
+	pgHost := os.Args[3]
+	pgPort, _ := strconv.Atoi(os.Args[4])
+	serverHost := os.Args[5]
+	serverPort, _ := strconv.Atoi(os.Args[6])
 
-	db.CreateConfig(dbName, dbHost)
+	db.CreateConfig(dbName, pgUser, pgHost, pgPort)
 
-	log.Infof("Starting server for database %s; serving at %s", dbName, serverHostPort)
-	server.StartServer(serverHostPort)
+	log.Infof("Starting server for database %s; serving at %s:%d", dbName, serverHost, serverPort)
+	server.StartServer(serverHost, serverPort)
 }
