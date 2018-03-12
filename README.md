@@ -37,11 +37,18 @@ host    replication     all             127.0.0.1/32            trust
 
 Restart the postgresql service.
 
+Alternatively, if you don't want to make any changes on your local PostgreSQL instance, you can run a pre-configured containerized version of PostgreSQL:
+
+```bash
+$ docker run -it -p 5432:5432 debezium/postgres:10.0
+```
+
 Launching
 ---------
 Launch the application server on `localhost` port `12312`:
+
 ```bash
-$ docker run \                                                                                                            
+$ docker run \
     -e DBNAME="postgres" \
     -e PGUSER="postgres" \
     -e PGHOST="localhost" \
@@ -50,7 +57,6 @@ $ docker run \
     -e SERVERPORT=12312 \
     --net host \
     -it sidmutha/pgdeltastream:v0.1
-
 ```
 
 Tests
