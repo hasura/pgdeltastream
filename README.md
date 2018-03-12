@@ -8,7 +8,7 @@ PostgreSQL logical decoding allows the streaming of the Write Ahead Log (WAL) vi
 
 Overview of PGDeltaStream
 -------------------------
-The workflow to use this application is split into 3 phases:
+When a replication slot is created, Postgres takes a snapshot of the current state of the database and records the consistent point from where streaming is supposed to begin. To facilitate retrieving data from the snapshot and to stream changes from then onwards, the workflow as been split into 3 phases:
 
 1. Init: Create a replication slot
 
@@ -68,12 +68,40 @@ curl -X POST \
   -d '{"table": "test_table", "offset":0, "limit":10}'
 ```
 
+The returned data will be a JSON list of rows:
+
+```json
+[{"id":1,"name":"abc"},{"id":2,"name":"abc1"},{"id":3,"name":"abc2"},{"id":4,"name":"val1"},{"id":5,"name":"val2"} ... ]
+```
+
 Note that only the data upto the time the replication slot was created will be available in the snapshot. 
 
-**Stream changes over websocket***
 
-Connect to the websocket endpoint to `/v1/lr/stream` along with the slot name to start streaming the changes:
+
+**Stream changes over websocket**
+
+Connect to the websocket endpoint `/v1/lr/stream` along with the slot name to start streaming the changes:
 
 ```
 ws://localhost:12312/v1/lr/stream?slotName=delta_face56
 ```
+
+The streaming data will contain the operation type (create, update, delete), table details, old values (in case of an update or delete), new values and the `nextlsn` value. 
+
+The query:
+
+```
+INSERT INTO test_table (name) VALUES ('newval1');
+```
+will produce the following change record:
+```json
+{"nextlsn":"0/170FCB0","change":[{"kind":"insert","schema":"public","table":"test_table","columnnames":["id","name"],"columntypes":["integer","text"],"columnvalues":[3,"newval1"]}]}
+```
+
+The `nextlsn` points to the next record in the WAL. To update postgres of the consumed position, send this value over the websocket connection.
+
+```
+{"lsn":"0/170FCB0"}
+```
+
+This will commit to Postgres that you've consumed upto the WAL position "0/170FCB0" so that in case of a failure of the websocket connection, the streaming resumes from this record.
