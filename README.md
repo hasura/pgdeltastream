@@ -43,6 +43,19 @@ Launch the application server on localhost port 12312:
 ```
 go run hasuradb localhost localhost:12312
 ```
+Tests
+-----
+Tests have been written using the Go testing framework. To run tests make sure you have Postgres running at `localhost:5432`.
+
+Use `go test` to run tests. Example:
+
+```bash
+$ cd server
+$ go test
+<output truncated>
+PASS
+ok   github.com/hasura/pgdeltastream/server 0.113s
+```
 
 Usage
 -----
@@ -142,7 +155,7 @@ will produce the following change record:
 
 The `nextlsn` is the Log Sequence Number (LSN) that points to the next record in the WAL. To update postgres of the consumed position simply send this value over the websocket connection:
 
-```
+```json
 {"lsn":"0/170FCB0"}
 ```
 
