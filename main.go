@@ -12,7 +12,7 @@ import (
 func main() {
 	// args: dbname, pguser, pghost, pgport, server host server port
 	if len(os.Args) != 7 {
-		log.Fatal("Run with args: dbName pgHost pgPort serverHost serverPort")
+		log.Fatal("Run with args: dbName pgUser pgHost pgPort serverHost serverPort")
 	}
 	dbName := os.Args[1]
 	pgUser := os.Args[2]

@@ -17,7 +17,7 @@ var wsupgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func StartServer(host, port string) {
+func StartServer(host string, port int) {
 	var err error
 	session := &types.Session{}
 	r := gin.Default()

@@ -13,7 +13,7 @@ import (
 
 func TestInit(t *testing.T) {
 	session := &types.Session{}
-	db.CreateConfig("postgres", "localhost")
+	db.CreateConfig("postgres", "postgres", "localhost", 5432)
 	err := initDB(session)
 	defer func() {
 		// clean up
@@ -73,7 +73,7 @@ func TestSnapShotData(t *testing.T) {
 
 	// init a replication slot
 	session := &types.Session{}
-	db.CreateConfig("postgres", "localhost")
+	db.CreateConfig("postgres", "postgres", "localhost", 5432)
 	err = initDB(session)
 	defer func() {
 		// clean up

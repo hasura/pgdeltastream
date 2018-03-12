@@ -20,4 +20,4 @@ RUN go get -u github.com/jackc/pgx
 WORKDIR /go/src/github.com/hasura/pgdeltastream
 RUN go build .
 EXPOSE ${SERVERPORT}
-CMD [ "./pgdeltastream", ${DBNAME}, ${PGUSER}, ${PGHOST}, ${PGPORT}, ${SERVERHOST}, ${SERVERPORT} ]
+CMD  "./pgdeltastream" ${DBNAME} ${PGUSER} ${PGHOST} ${PGPORT} ${SERVERHOST} ${SERVERPORT} 
