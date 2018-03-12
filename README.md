@@ -40,15 +40,15 @@ Restart the postgresql service.
 Launching
 ---------
 Launch the application server on `localhost` port `12312`:
-```
-docker run \                                                                                                              Monday, March 12 '18  3:49 PM
--e DBNAME="postgres" \
--e PGUSER="postgres" \
--e PGHOST="localhost" \
--e PGPORT=5432 \
--e SERVERHOST="localhost" \
--e SERVERPORT=12312 \
--it sidmutha/pgdeltastream:v0.1
+```bash
+$ docker run \                                                                                                            
+    -e DBNAME="postgres" \
+    -e PGUSER="postgres" \
+    -e PGHOST="localhost" \
+    -e PGPORT=5432 \
+    -e SERVERHOST="localhost" \
+    -e SERVERPORT=12312 \
+    -it sidmutha/pgdeltastream:v0.1
 
 ```
 
