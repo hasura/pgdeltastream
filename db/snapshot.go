@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func SnapshotData(session *types.Session, tableName string, offset, limit int) ([]map[string]interface{}, error) {
+func SnapshotData(session *types.Session, tableName string, offset, limit uint) ([]map[string]interface{}, error) {
 	log.Info("Begin transaction")
 	tx, err := session.PGConn.BeginEx(context.TODO(), &pgx.TxOptions{
 		IsoLevel: pgx.RepeatableRead,

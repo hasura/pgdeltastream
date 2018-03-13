@@ -28,7 +28,9 @@ func StartServer(host string, port int) {
 			if err != nil {
 				e := fmt.Sprintf("unable to init session")
 				log.WithError(err).Error(e)
-				c.AbortWithStatusJSON(http.StatusInternalServerError, e)
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"error": e,
+				})
 				return
 			}
 			c.JSON(http.StatusOK, gin.H{
@@ -43,27 +45,34 @@ func StartServer(host string, port int) {
 				if session.SnapshotName == "" {
 					e := fmt.Sprintf("snapshot not available: call /init to initialize a new slot and snapshot")
 					log.Error(e)
-					c.AbortWithStatusJSON(http.StatusServiceUnavailable, e)
+					c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{
+						"error": e,
+					})
 					return
 				}
 
 				// get data with table, offset, limits
 				var postData types.SnapshotDataJSON
+				//err = c.MustBindWith(&postData, binding.JSON)
 				err = c.ShouldBindJSON(&postData)
 				if err != nil {
 					e := fmt.Sprintf("invalid input JSON")
 					log.WithError(err).Error(e)
-					c.AbortWithStatusJSON(http.StatusBadRequest, e)
+					c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+						"error": e,
+					})
 					return
 				}
 
-				log.Infof("Snapshot data requested for table: %s, offset: %d, limit: %d", postData.Table, postData.Offset, postData.Limit)
+				log.Infof("Snapshot data requested for table: %s, offset: %d, limit: %d", postData.Table, *postData.Offset, *postData.Limit)
 
-				data, err := snapshotData(session, postData.Table, postData.Offset, postData.Limit)
+				data, err := snapshotData(session, postData.Table, *postData.Offset, *postData.Limit)
 				if err != nil {
 					e := fmt.Sprintf("unable to get snapshot data")
 					log.WithError(err).Error(e)
-					c.AbortWithStatusJSON(http.StatusInternalServerError, e)
+					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+						"error": e,
+					})
 					return
 				}
 
@@ -85,7 +94,9 @@ func StartServer(host string, port int) {
 				if slotName == "" {
 					e := fmt.Sprintf("no slotName provided")
 					log.WithError(err).Error(e)
-					c.AbortWithStatusJSON(http.StatusBadRequest, e)
+					c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+						"error": e,
+					})
 					return
 				}
 
@@ -97,7 +108,9 @@ func StartServer(host string, port int) {
 				if err != nil {
 					e := fmt.Sprintf("could not upgrade to websocket connection")
 					log.WithError(err).Error(e)
-					c.AbortWithStatusJSON(http.StatusInternalServerError, e)
+					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+						"error": e,
+					})
 					return
 				}
 				session.WSConn = wsConn
@@ -107,7 +120,9 @@ func StartServer(host string, port int) {
 				if err != nil {
 					e := fmt.Sprintf("could not create stream")
 					log.WithError(err).Error(e)
-					c.AbortWithStatusJSON(http.StatusInternalServerError, e)
+					c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+						"error": e,
+					})
 					return
 				}
 			})
@@ -131,7 +146,7 @@ func initDB(session *types.Session) error {
 	return nil
 }
 
-func snapshotData(session *types.Session, tableName string, offset, limit int) ([]map[string]interface{}, error) {
+func snapshotData(session *types.Session, tableName string, offset, limit uint) ([]map[string]interface{}, error) {
 	return db.SnapshotData(session, tableName, offset, limit)
 }
 

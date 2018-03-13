@@ -8,28 +8,30 @@
   revision = "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae"
 
 [[projects]]
+  branch = "master"
   name = "github.com/gin-gonic/gin"
   packages = [
     ".",
     "binding",
+    "json",
     "render"
   ]
-  revision = "d459835d2b077e44f7c9b453505ee29881d5d12d"
-  version = "v1.2"
+  revision = "5d3f30cfc81f9109850fa9043a19783cbbde68a5"
 
 [[projects]]
+  branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
-  version = "v1.0.0"
+  revision = "bbd03ef6da3a115852eaf24c8a1c46aeb39aa175"
 
 [[projects]]
+  branch = "master"
   name = "github.com/gorilla/websocket"
   packages = ["."]
-  revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
-  version = "v1.2.0"
+  revision = "eb925808374e5ca90c83401a40d711dc08c0c0f6"
 
 [[projects]]
+  branch = "master"
   name = "github.com/jackc/pgx"
   packages = [
     ".",
@@ -39,38 +41,55 @@
     "pgproto3",
     "pgtype"
   ]
-  revision = "da3231b0b66e2e74cdb779f1d46c5e958ba8be27"
-  version = "v3.1.0"
+  revision = "a07b87eb8b695206914b6387082883fcce6f9913"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/json-iterator/go"
+  packages = ["."]
+  revision = "25fa392355a1247f99f8975710a2c4f0f55a081f"
+
+[[projects]]
+  branch = "master"
   name = "github.com/mattn/go-isatty"
   packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
 
 [[projects]]
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
+
+[[projects]]
+  name = "github.com/modern-go/reflect2"
+  packages = ["."]
+  revision = "1df9eeb2bb81f327b96228865c5687bc2194af3f"
+  version = "1.0.0"
+
+[[projects]]
+  branch = "master"
   name = "github.com/pkg/errors"
   packages = ["."]
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "816c9085562cd7ee03e7f8188a1cfd942858cded"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
-  version = "v1.0.4"
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
 
 [[projects]]
+  branch = "master"
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "9831f2c3ac1068a78f50999a30db84270f647af6"
-  version = "v1.1"
+  revision = "02537d3a3e32ef636a53519265d211bd208ca488"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "7effd64e1180aa386cd36da9ca55a1e9fc7cf7cb"
+  revision = "182114d582623c1caa54f73de9c7224e23a48487"
 
 [[projects]]
   branch = "master"
@@ -79,7 +98,7 @@
     "unix",
     "windows"
   ]
-  revision = "7dca6fe1f43775aa6d1334576870ff63f978f539"
+  revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
 
 [[projects]]
   name = "gopkg.in/go-playground/validator.v8"
@@ -96,6 +115,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b4afd5c1dfc4886a7824cefd1ae4362d06dd092ebd3d47f2506844fb6a69d417"
+  inputs-digest = "7108b201b18c0ca9757a55757eeff9d8dd5e0dc5d98202506810718bc6ae59f8"
   solver-name = "gps-cdcl"
   solver-version = 1
