@@ -37,42 +37,6 @@ $ docker run \
     -it sidmutha/pgdeltastream:v0.1
 ```
 
-Follow the example for a sample use case.
-
-Requirements
-------------
-- PostgreSQL 10 configured for logical replication and the [wal2json](https://github.com/eulerto/wal2json) plugin installed
-
-Configuring PostgreSQL
-----------------------
-To use the logical replication feature, set the following parameters in `postgresql.conf`:
-
-```
-wal_level = logical
-max_replication_slots = 4
-```
-
-Further, add this to `pg_hba.conf`:
-
-```
-host    replication     all             127.0.0.1/32            trust
-```
-
-Restart the postgresql service.
-
-Tests
------
-Tests have been written using the Go testing framework. To run tests make sure you have Postgres running at `localhost:5432`.
-
-Use `go test` to run tests. Example:
-
-```bash
-$ cd server
-$ go test
-<output truncated>
-PASS
-ok   github.com/hasura/pgdeltastream/server 0.113s
-```
 
 Usage
 -----
@@ -183,6 +147,28 @@ This will commit to Postgres that you've consumed upto the WAL position `0/170FC
 The application has been designed as a single session use case; i.e. as of now there can be only one replication slot and corresponding stream that can be managed. Any calls to `/v1/init` will delete and recreate the replication slot (and the snapshot of course).
 
 At any point if you wish to start over with a new replication slot, call `/v1/init` again to reset the session. You can then continue with the regular workflow.
+
+Requirements
+------------
+- PostgreSQL 10 configured for logical replication and the [wal2json](https://github.com/eulerto/wal2json) plugin installed
+
+Configuring PostgreSQL for logical replication
+----------------------------------------------
+To use the logical replication feature, set the following parameters in `postgresql.conf`:
+
+```
+wal_level = logical
+max_replication_slots = 4
+```
+
+Further, add this to `pg_hba.conf`:
+
+```
+host    replication     all             127.0.0.1/32            trust
+```
+
+Restart the `postgresql` service.
+
 
 Slot Naming
 -----------
