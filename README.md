@@ -41,10 +41,10 @@ Follow the example for a sample use case.
 
 Requirements
 ------------
-- PostgreSQL 10 running on port `5432` with the [wal2json](https://github.com/eulerto/wal2json) plugin
+- PostgreSQL 10 configured for logical replication and the [wal2json](https://github.com/eulerto/wal2json) plugin installed
 
-Configuration
--------------
+Configuring PostgreSQL
+----------------------
 To use the logical replication feature, set the following parameters in `postgresql.conf`:
 
 ```
