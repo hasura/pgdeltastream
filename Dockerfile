@@ -10,10 +10,11 @@ ENV SERVERPORT 12312
 
 ADD . /go/src/github.com/hasura/pgdeltastream
 
-RUN go get -u github.com/golang/dep/cmd/dep
-RUN dep ensure
-
 WORKDIR /go/src/github.com/hasura/pgdeltastream
+
+RUN go get -u github.com/golang/dep/cmd/dep
+RUN dep ensure --vendor-only
+
 RUN go build .
 EXPOSE ${SERVERPORT}
 CMD  "./pgdeltastream" ${DBNAME} ${PGUSER} ${PGHOST} ${PGPORT} ${SERVERHOST} ${SERVERPORT} 
