@@ -34,7 +34,7 @@ $ docker run \
     -e SERVERHOST="localhost" \
     -e SERVERPORT=12312 \
     --net host \
-    -it sidmutha/pgdeltastream:v0.1
+    -it sidmutha/pgdeltastream:v0.1.2
 ```
 
 
