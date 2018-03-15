@@ -22,26 +22,29 @@ func LRStream(session *types.Session) {
 		log.Error(err)
 		return
 	}
+
+	// start sending periodic status heartbeats to postgres
 	go sendPeriodicHeartbeats(session)
 
 	for {
 		if !session.ReplConn.IsAlive() {
 			log.WithField("CauseOfDeath", session.ReplConn.CauseOfDeath()).Error("Looks like the connection is dead")
 		}
-		log.Info("Waiting for message")
+		log.Info("Waiting for LR message")
 
 		ctx := session.Ctx
 		message, err := session.ReplConn.WaitForReplicationMessage(ctx)
 		if err != nil {
-			log.WithError(err).Errorf("%s", reflect.TypeOf(err))
-
-			// check if error is because of the context being cancelled
+			// check whether the error is because of the context being cancelled
 			if ctx.Err() != nil {
 				// context cancelled, exit
 				log.Warn("Websocket closed")
 				return
 			}
+
+			log.WithError(err).Errorf("%s", reflect.TypeOf(err))
 		}
+
 		if message.WalMessage != nil {
 			if message == nil {
 				log.Error("Message nil")
@@ -68,7 +71,6 @@ func LRStream(session *types.Session) {
 				}
 			}
 		}
-
 	}
 }
 
@@ -77,7 +79,7 @@ func LRStream(session *types.Session) {
 func LRListenAck(session *types.Session, wsErr chan<- error) {
 	jsonMsg := make(map[string]string)
 	for {
-		log.Info("Listening for ws message")
+		log.Info("Listening for WS message")
 		//_, msg, err := session.WSConn.ReadMessage()
 		err := session.WSConn.ReadJSON(&jsonMsg)
 		if err != nil {
@@ -85,7 +87,7 @@ func LRListenAck(session *types.Session, wsErr chan<- error) {
 			wsErr <- err // send the error to the channel to terminate connection
 			return
 		}
-		log.Info("Received ws message: ", jsonMsg)
+		log.Info("Received WS message: ", jsonMsg)
 		lsn := jsonMsg["lsn"]
 		lrAckLSN(session, lsn)
 	}
@@ -113,9 +115,11 @@ func sendPeriodicHeartbeats(session *types.Session) {
 	for {
 		select {
 		case <-session.Ctx.Done():
+			// context closed; stop sending heartbeats
 			return
 		case <-time.Tick(time.Duration(statusHeartbeatIntervalSeconds) * time.Second):
 			{
+				// send hearbeat message at every statusHeartbeatIntervalSeconds interval
 				log.Info("Sending periodic status heartbeat")
 				err := sendStandbyStatus(session)
 				if err != nil {

@@ -132,9 +132,9 @@ func StartServer(host string, port int) {
 	r.Run(fmt.Sprintf("%s:%d", host, port))
 }
 
+// create replication slot ex and get snapshot name, consistent point
+// return slotname
 func initDB(session *types.Session) error {
-	// create replication slot ex and get snapshot name, consistent point
-	// return slotname (so that any kind of failure can be restarted from)
 	var err error
 	// initilize the connections for the session
 	resetSession(session)
@@ -158,13 +158,12 @@ func lrStream(session *types.Session) error {
 		return fmt.Errorf("Could not create replication connection")
 	}
 
-	//ctx, cancelFunc := context.WithCancel(context.Background())
 	wsErr := make(chan error, 1)
-	go db.LRListenAck(session, wsErr) // concurrently listen for ack messages
-	go db.LRStream(session)           // err?
+	go db.LRListenAck(session, wsErr) // concurrently listen on the ws for ack messages
+	go db.LRStream(session)           // listen for WAL messages and send them over ws
 
 	select {
-	/*case <-c.Writer.CloseNotify(): // ws closed
+	/*case <-c.Writer.CloseNotify(): // ws closed // ?this doesn't work?
 	  log.Warn("Websocket connection closed. Cancelling context.")
 	  cancelFunc()
 	*/

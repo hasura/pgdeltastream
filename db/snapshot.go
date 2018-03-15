@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// SnapshotData queries the snapshot for data from the given table
+// and returns the results as a JSON array
 func SnapshotData(session *types.Session, tableName string, offset, limit uint) ([]map[string]interface{}, error) {
 	log.Info("Begin transaction")
 	tx, err := session.PGConn.BeginEx(context.TODO(), &pgx.TxOptions{
@@ -31,6 +33,7 @@ func SnapshotData(session *types.Session, tableName string, offset, limit uint) 
 	if err != nil {
 		return nil, err
 	}
+	// convert data each row into columnName, value map
 	data := processRows(rows)
 	log.Info("Number of results: ", len(data))
 
@@ -42,11 +45,10 @@ func SnapshotData(session *types.Session, tableName string, offset, limit uint) 
 	return data, nil
 }
 
+// put each row in a map containing column names and values
 func processRows(rows *pgx.Rows) []map[string]interface{} {
-	// put each row in a struct containing type, table and values
 	fields := rows.FieldDescriptions()
-	log.Info(fields)
-	resultsMessage := make([]map[string]interface{}, 0)
+	resultsList := make([]map[string]interface{}, 0)
 	for rows.Next() {
 		values, _ := rows.Values()
 		rowJSON := make(map[string]interface{})
@@ -55,8 +57,8 @@ func processRows(rows *pgx.Rows) []map[string]interface{} {
 			value := values[i]
 			rowJSON[name] = value
 		}
-		resultsMessage = append(resultsMessage, rowJSON)
+		resultsList = append(resultsList, rowJSON)
 	}
 
-	return resultsMessage
+	return resultsList
 }

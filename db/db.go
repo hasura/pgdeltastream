@@ -75,6 +75,7 @@ func Init(session *types.Session) error {
 	return nil
 }
 
+// CheckAndCreateReplConn creates a new replication connection
 func CheckAndCreateReplConn(session *types.Session) error {
 	if session.ReplConn != nil {
 		if session.ReplConn.IsAlive() {
@@ -110,7 +111,7 @@ func generateSlotName() string {
 
 	rand.Seed(time.Now().Unix())
 
-	// generate name such as gigantic20
+	// generate name such as delta_gigantic20
 	name := fmt.Sprintf("delta_%s%d", strs[rand.Intn(len(strs))], rand.Intn(100))
 
 	return name
