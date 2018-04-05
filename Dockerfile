@@ -3,6 +3,8 @@ FROM golang:1.10
 
 ENV DBNAME "postgres"
 ENV PGUSER "postgres"
+# TODO: better handle default pass
+ENV PGPASS "postgres" 
 ENV PGHOST "localhost"
 ENV PGPORT 5432
 ENV SERVERHOST "localhost"
@@ -17,4 +19,4 @@ RUN dep ensure --vendor-only
 
 RUN go build .
 EXPOSE ${SERVERPORT}
-CMD  "./pgdeltastream" ${DBNAME} ${PGUSER} ${PGHOST} ${PGPORT} ${SERVERHOST} ${SERVERPORT} 
+CMD  "./pgdeltastream" ${DBNAME} ${PGUSER} ${PGPASS} ${PGHOST} ${PGPORT} ${SERVERHOST} ${SERVERPORT} 

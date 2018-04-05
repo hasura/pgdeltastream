@@ -15,11 +15,12 @@ import (
 var dbConfig = pgx.ConnConfig{}
 
 // Initialize the database configuration
-func CreateConfig(dbName, pgUser, pgHost string, pgPort int) {
+func CreateConfig(dbName, pgUser, pgPass, pgHost string, pgPort int) {
 	dbConfig.Database = dbName
 	dbConfig.Host = pgHost
 	dbConfig.Port = uint16(pgPort)
 	dbConfig.User = pgUser
+	dbConfig.Password = pgPass
 }
 
 // Init function
