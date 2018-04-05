@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// args: dbname, pguser, pgpass, pghost, pgport, server host, server port
-	if len(os.Args) != 7 {
+	if len(os.Args) != 8 {
 		log.Fatal("Run with args: dbName pgUser pgPass pgHost pgPort serverHost serverPort")
 	}
 	dbName := os.Args[1]
