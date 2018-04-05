@@ -19,7 +19,7 @@ func main() {
 	pgPass := os.Args[3]
 	pgHost := os.Args[4]
 	pgPort, _ := strconv.Atoi(os.Args[5])
-	serverHost := os.Args[5]
+	serverHost := os.Args[6]
 	serverPort, _ := strconv.Atoi(os.Args[7])
 
 	db.CreateConfig(dbName, pgUser, pgPass, pgHost, pgPort)
