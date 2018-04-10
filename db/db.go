@@ -42,6 +42,10 @@ func Init(session *types.Session) error {
 	session.PGConn = pgConn
 
 	log.Info("Creating replication connection to ", dbConfig.Database)
+	if session.ReplConn != nil {
+		log.Info("Closing existing replication connection")
+		session.ReplConn.Close()
+	}
 	replConn, err := pgx.ReplicationConnect(dbConfig)
 	if err != nil {
 		return err

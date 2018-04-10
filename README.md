@@ -29,6 +29,7 @@ Launch PGDeltaStream:
 $ docker run \
     -e DBNAME="postgres" \
     -e PGUSER="postgres" \
+    -e PGPASS="''" \
     -e PGHOST="localhost" \
     -e PGPORT=5432 \
     -e SERVERHOST="localhost" \
