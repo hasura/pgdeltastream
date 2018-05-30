@@ -1,18 +1,20 @@
-PG Delta Stream
-===============
+PGDeltaStream
+=============
 Introduction
 ------------
-PG Delta Stream uses PostgreSQL's logical decoding feature to stream table changes over websockets. 
+PGDeltaStream uses PostgreSQL's logical decoding feature to stream table changes over a WebSocket connection.
 
-PostgreSQL logical decoding allows the streaming of the Write Ahead Log (WAL) via an output plugin from a logical replication slot. An output plugin is required to decode the changes into a user consumable format. We use [wal2json](https://github.com/eulerto/wal2json) as the output plugin to get changes as JSON objects.
+PostgreSQL's logical decoding enables streaming of the Write Ahead Log (WAL) from a logical replication slot into a user consummable format using an output plugin. PGDeltaStream uses [wal2json](https://github.com/eulerto/wal2json) as the output plugin to get changes as JSON objects and streams them over a WebSocket connection.
 
 Overview of PGDeltaStream
 -------------------------
-When a replication slot is created, Postgres takes a snapshot of the current state of the database and records the consistent point from where streaming is supposed to begin. To facilitate retrieving data from the snapshot and to stream changes from then onwards, the workflow as been split into 3 phases:
+When a logical replication slot is created, Postgres takes a snapshot of the current state of the database and records the consistent point from where streaming is supposed to begin. The snapshot helps build an initial state of the database over which the streaming changes are to be applied.
+
+To facilitate retrieving data from the snapshot and to stream changes from then onwards, the workflow as been split into 3 phases:
 
 1. Init: Create a replication slot
 
-2. Snapshot data: Get data from the snapshot
+2. Snapshot data: Get data from the snapshot via HTTP
 
 3. Stream: Stream the WAL changes from the consistent point over a websocket connection
 
