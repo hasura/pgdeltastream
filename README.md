@@ -8,7 +8,7 @@ PostgreSQL's logical decoding enables streaming of the Write Ahead Log (WAL) fro
 
 Overview of PGDeltaStream
 -------------------------
-When a logical replication slot is created, Postgres takes a snapshot of the current state of the database and records the consistent point from where streaming is supposed to begin. The snapshot helps build an initial state of the database over which the streaming changes are to be applied.
+When a logical replication slot is created, Postgres creates a snapshot of the current state of the database and records the consistent point from where streaming is supposed to begin. The snapshot helps build an initial state of the database over which streaming changes can be applied.
 
 To facilitate retrieving data from the snapshot and to stream changes from then onwards, the workflow as been split into 3 phases:
 
@@ -93,8 +93,6 @@ The returned data will be a JSON list of rows:
 ```
 
 Note that only the data upto the time the replication slot was created will be available in the snapshot. 
-
-
 
 **Stream changes over websocket**
 
