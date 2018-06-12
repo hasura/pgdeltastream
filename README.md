@@ -6,6 +6,8 @@ PGDeltaStream uses PostgreSQL's logical decoding feature to stream table changes
 
 PostgreSQL's logical decoding enables streaming of the Write Ahead Log (WAL) from a logical replication slot into a user consummable format using an output plugin. PGDeltaStream uses [wal2json](https://github.com/eulerto/wal2json) as the output plugin to get changes as JSON objects and streams them over a WebSocket connection.
 
+![PGDeltaStream Short Demo](demo.gif "PGDeltaStream Short Demo")
+
 Overview of PGDeltaStream
 -------------------------
 When a logical replication slot is created, Postgres creates a snapshot of the current state of the database and records the consistent point from where streaming is supposed to begin. The snapshot helps build an initial state of the database over which streaming changes can be applied.
@@ -40,7 +42,7 @@ $ docker run \
     -it hasura/pgdeltastream:v0.1.6
 ```
 
-Archiecture
+Architecture
 -----------
 ![PGDeltaStream Archiecture Diagram](pgdeltastream-arch.png "PGDeltaStream Archiecture")
 
