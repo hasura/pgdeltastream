@@ -11,7 +11,7 @@ import (
 
 // SnapshotData queries the snapshot for data from the given table
 // and returns the results as a JSON array
-func SnapshotData(session *types.Session, tableName string, offset, limit uint) ([]map[string]interface{}, error) {
+func SnapshotData(session *types.Session, requestParams *types.SnapshotDataJSON) ([]map[string]interface{}, error) {
 	log.Info("Begin transaction")
 	tx, err := session.PGConn.BeginEx(context.TODO(), &pgx.TxOptions{
 		IsoLevel: pgx.RepeatableRead,
@@ -27,7 +27,13 @@ func SnapshotData(session *types.Session, tableName string, offset, limit uint) 
 		return nil, err
 	}
 
-	query := fmt.Sprintf("SELECT * FROM %s OFFSET %d LIMIT %d", tableName, offset, limit)
+	var query string
+	if requestParams.OrderBy == nil {
+		// no ordering specified by user
+		query = fmt.Sprintf("SELECT * FROM %s OFFSET %d LIMIT %d", requestParams.Table, *requestParams.Offset, *requestParams.Limit)
+	} else {
+		query = fmt.Sprintf("SELECT * FROM %s ORDER BY %s %s OFFSET %d LIMIT %d", requestParams.Table, requestParams.OrderBy.Column, requestParams.OrderBy.Order, *requestParams.Offset, *requestParams.Limit)
+	}
 	log.Info("Executing query: ", query)
 	rows, err := tx.Query(query)
 	if err != nil {

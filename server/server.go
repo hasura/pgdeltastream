@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -65,8 +66,16 @@ func StartServer(host string, port int) {
 				}
 
 				log.Infof("Snapshot data requested for table: %s, offset: %d, limit: %d", postData.Table, *postData.Offset, *postData.Limit)
-
-				data, err := snapshotData(session, postData.Table, *postData.Offset, *postData.Limit)
+				err = validateSnapshotDataJSON(&postData)
+				if err != nil {
+					e := err.Error()
+					log.WithError(err).Error(e)
+					c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+						"error": e,
+					})
+					return
+				}
+				data, err := snapshotData(session, &postData)
 				if err != nil {
 					e := fmt.Sprintf("unable to get snapshot data")
 					log.WithError(err).Error(e)
@@ -146,8 +155,22 @@ func initDB(session *types.Session) error {
 	return nil
 }
 
-func snapshotData(session *types.Session, tableName string, offset, limit uint) ([]map[string]interface{}, error) {
-	return db.SnapshotData(session, tableName, offset, limit)
+// validate fields in the snapshot data request JSON
+func validateSnapshotDataJSON(requestData *types.SnapshotDataJSON) error {
+	ob := requestData.OrderBy
+	if ob != nil {
+		if ob.Column == "" {
+			return fmt.Errorf("required field 'column' missing in 'order_by'")
+		}
+		if !(strings.EqualFold(ob.Order, "asc") || strings.EqualFold(ob.Order, "desc")) {
+			return fmt.Errorf("order_by order direction can only be either 'ASC' or 'DESC'")
+		}
+	}
+	return nil
+}
+
+func snapshotData(session *types.Session, requestData *types.SnapshotDataJSON) ([]map[string]interface{}, error) {
+	return db.SnapshotData(session, requestData)
 }
 
 func lrStream(session *types.Session) error {
