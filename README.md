@@ -37,9 +37,12 @@ $ docker run \
     -e SERVERHOST="localhost" \
     -e SERVERPORT=12312 \
     --net host \
-    -it sidmutha/pgdeltastream:v0.1.6
+    -it hasura/pgdeltastream:v0.1.6
 ```
 
+Archiecture
+-----------
+![PGDeltaStream Archiecture Diagram](pgdeltastream-arch.png "PGDeltaStream Archiecture")
 
 Usage
 -----
@@ -57,15 +60,15 @@ Keep note of this slot name to use in the next phases.
 
 **Get snapshot data**
 
-To get data from the snapshot, make a POST request to the `/v1/snapshot/data` endpoint with the slot name, table name, offset and limit:
+To get data from the snapshot, make a POST request to the `/v1/snapshot/data` endpoint with the slot name, table name, offset and limit. You can also specify the column and order you want the results to be sorted in:
 ```
 curl -X POST \
   http://localhost:12312/v1/snapshot/data \
   -H 'content-type: application/json' \
-  -d '{"slotName":"delta_face56", "table": "test_table", "offset":0, "limit":5}'
+  -d '{"slotName": "delta_face56", "table": "test_table", "offset": 0, "limit": 5, "order_by": {"column": "id", "order": "ASC"}}'
 ```
 
-The returned data will be a JSON list of rows:
+The returned data will be a JSON formatted list of rows:
 
 ```json
 [
@@ -181,4 +184,4 @@ Contributing
 ------------
 Contributions are welcome! 
 
-Please check out the [contributing guide](CONTRIBUTING.md) to learn about setting up the development environment and building the project. Also look at the [issues](https://github.com/hasura/pgdeltastream/issues) page and help us out in improving PGDeltaStream!
+Please check out the [contributing guide](CONTRIBUTING.md) to learn about setting up the development environment, building the project and running tests. Also look at the [issues](https://github.com/hasura/pgdeltastream/issues) page and help us out in improving PGDeltaStream!

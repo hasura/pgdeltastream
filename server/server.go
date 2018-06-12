@@ -65,7 +65,6 @@ func StartServer(host string, port int) {
 					return
 				}
 
-				log.Infof("Snapshot data requested for table: %s, offset: %d, limit: %d", postData.Table, *postData.Offset, *postData.Limit)
 				err = validateSnapshotDataJSON(&postData)
 				if err != nil {
 					e := err.Error()
@@ -75,6 +74,9 @@ func StartServer(host string, port int) {
 					})
 					return
 				}
+
+				log.Infof("Snapshot data requested for table: %s, offset: %d, limit: %d", postData.Table, *postData.Offset, *postData.Limit)
+
 				data, err := snapshotData(session, &postData)
 				if err != nil {
 					e := fmt.Sprintf("unable to get snapshot data")
