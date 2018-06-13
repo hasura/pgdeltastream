@@ -8,7 +8,7 @@ A golang webserver to stream Postgres changes *atleast-once* over websockets, us
 
 ## Introduction
 
-PGDeltaStream uses Postgres's logical decoding feature to stream table changes over a websocket connection. It is a stateless service and can be dropped next to any Postgres.
+PGDeltaStream uses Postgres's logical decoding feature to stream table changes over a websocket connection. It is a stateless service and can be connected directly to a Postgres instance.
 
 PGDeltaStream gives you endpoints to snapshot your current data and then start streaming after the snapshot guaranteeing that you don’t lose any event data. Clients can also ACK an offset value as frequently as they desire over the websocket connection. If a client reconnects, then the stream continues from the last ACKed offset.
 
@@ -18,7 +18,7 @@ This process **guarantees atleast-once delivery** of changes in postgres.
 
 When a logical replication slot is created, Postgres creates a snapshot of the current state of the database and records the consistent point from where streaming is supposed to begin. The snapshot helps build an initial state of the database over which streaming changes can be applied.
 
-To facilitate retrieving data from the snapshot and to stream changes from then onwards, the workflow as been split into 3 phases:
+To facilitate retrieving data from the snapshot and to stream changes from then onwards, the workflow is split into 3 phases:
 
 1. Init: Create a replication slot
 2. Snapshot: Get data from the snapshot over HTTP
