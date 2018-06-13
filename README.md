@@ -1,5 +1,6 @@
-#PGDeltaStream
-A golang webserver to stream Postgres changes atleast-once over websockets using Postgres's logical decoding.
+# PGDeltaStream
+
+A golang webserver to stream Postgres changes *atleast-once* over websockets, using Postgres's logical decoding feature.
 
 ![PGDeltaStream Short Demo](demo.gif "PGDeltaStream Short Demo")
 
@@ -118,8 +119,9 @@ The query:
 ```
 INSERT INTO test_table (name) VALUES ('newval1');
 ```
-will produce the following change record:
-```json
+will produce the following change record over the websocket connection:
+```javascript
+// Received over ws
 {
   "nextlsn": "0/170FCB0",
   "change": [
@@ -144,15 +146,19 @@ will produce the following change record:
 }
 ```
 
-The `nextlsn` is the Log Sequence Number (LSN) that points to the next record in the WAL. To update postgres of the consumed position simply send this value over the websocket connection:
+The `nextlsn` is the Log Sequence Number (LSN) that points to the next record in the WAL. 
 
-```json
+### Step 4: ACK the offset 
+
+To update postgres of the consumed position simply send this value over the websocket connection:
+```javascript
+// Send over ws
 {"lsn":"0/170FCB0"}
 ```
 
 This will commit to Postgres that you've consumed upto the WAL position `0/170FCB0` so that in case of a failure of the websocket connection, the streaming resumes from this record.
 
-### Reset session
+### Reset stream
 
 The application has been designed as a single session use case; i.e. as of now there can be only one replication slot and corresponding stream that can be managed. Any calls to `/v1/init` will delete the existing replication slot, and create a new replication slot (alongwith the snapshot).
 
