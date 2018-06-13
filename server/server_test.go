@@ -102,7 +102,18 @@ func TestSnapShotData(t *testing.T) {
 	conn.Exec(fmt.Sprintf("insert into delta_test(name) values('%s')", "name6"))
 
 	// get data as we would using the /snapshot/data endpoint
-	data, err := snapshotData(session, "delta_test", 0, 10)
+	offset := uint(0)
+	limit := uint(10)
+	requestJSON := types.SnapshotDataJSON{
+		Table:  "delta_test",
+		Offset: &offset,
+		Limit:  &limit,
+		OrderBy: &types.OrderBy{
+			Column: "id",
+			Order:  "ASC",
+		},
+	}
+	data, err := snapshotData(session, &requestJSON)
 	if err != nil {
 		t.Fatal(err)
 	}

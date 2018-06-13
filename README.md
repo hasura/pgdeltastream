@@ -1,10 +1,10 @@
 # PGDeltaStream
 
-A golang webserver to stream Postgres changes *atleast-once* over websockets, using Postgres's logical decoding feature.
+A Golang webserver to stream Postgres changes *atleast-once* over websockets, using Postgres's logical decoding feature.
 
 ![PGDeltaStream Short Demo](demo.gif "PGDeltaStream Short Demo")
 
-**Note:** Currently, pgdeltastream is ideal as a reference boilerplate golang server of how to connect to a postgres logical replication slot, take a snapshot and stream changes. It should not be used to expose websockets to arbitrary clients!
+**Note:** Currently, pgdeltastream is ideal as a reference boilerplate Golang server of how to connect to a Postgres logical replication slot, take a snapshot and stream changes. It should not be used to expose websockets to arbitrary clients!
 
 ## Introduction
 
@@ -12,7 +12,7 @@ PGDeltaStream uses Postgres's logical decoding feature to stream table changes o
 
 PGDeltaStream gives you endpoints to snapshot your current data and then start streaming after the snapshot guaranteeing that you don’t lose any event data. Clients can also ACK an offset value as frequently as they desire over the websocket connection. If a client reconnects, then the stream continues from the last ACKed offset.
 
-This process **guarantees atleast-once delivery** of changes in postgres.
+This process **guarantees atleast-once delivery** of changes in Postgres.
 
 ## How it works
 
@@ -45,7 +45,7 @@ $ docker run \
     -e SERVERHOST="localhost" \
     -e SERVERPORT=12312 \
     --net host \
-    -it hasura/pgdeltastream:v0.1.6
+    -it hasura/pgdeltastream:v0.1.7
 ```
 
 ## Usage
@@ -160,7 +160,7 @@ This will commit to Postgres that you've consumed upto the WAL position `0/170FC
 
 ### Reset stream
 
-The application has been designed as a single session use case; i.e. as of now there can be only one replication slot and corresponding stream that can be managed. Any calls to `/v1/init` will delete the existing replication slot, and create a new replication slot (alongwith the snapshot).
+The application has been designed as a single session use case; i.e. as of now there can be only one replication slot and corresponding stream that can be managed. Any calls to `/v1/init` will delete the existing replication slot, and create a new replication slot (along with the snapshot).
 
 At any point if you wish to start over with a new replication slot, call `/v1/init` again to reset the "stream".
 
