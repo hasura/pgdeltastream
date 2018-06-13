@@ -6,9 +6,9 @@ A golang webserver to stream Postgres changes *atleast-once* over websockets, us
 
 ## Introduction
 
-PGDeltaStream uses Postgres's logical decoding feature to stream table changes over a websocket connection. It gives you endpoints to snapshot your current data and then start streaming after the snapshot guaranteeing that you don’t lose any event data. Clients can also ACK an offset value as frequently as they desire over the websocket connection. If a client reconnects, then the stream continues from the last ACKed offset.
+PGDeltaStream uses Postgres's logical decoding feature to stream table changes over a websocket connection. It gives you endpoints to snapshot your current data and then start streaming after the snapshot guaranteeing that you don’t lose any event data. Clients can also ACK an offset value as frequently as they desire over the websocket connection. If a client reconnects, then the stream continues from the last ACKed offset. Note that the ACK value is stored in postgres itself as a properly of the logical replication slot.
 
-This process guarantees atleast-once delivery of changes in postgres.
+This process guarantees atleast-once delivery of changes in postgres and is safe against arbitrary failure of any of the moving parts involved.
 
 ## How it works
 When a logical replication slot is created, Postgres creates a snapshot of the current state of the database and records the consistent point from where streaming is supposed to begin. The snapshot helps build an initial state of the database over which streaming changes can be applied.
@@ -110,8 +110,9 @@ The query:
 ```
 INSERT INTO test_table (name) VALUES ('newval1');
 ```
-will produce the following change record:
-```json
+will produce the following change record over the websocket connection:
+```javascript
+// Received over ws
 {
   "nextlsn": "0/170FCB0",
   "change": [
@@ -136,15 +137,19 @@ will produce the following change record:
 }
 ```
 
-The `nextlsn` is the Log Sequence Number (LSN) that points to the next record in the WAL. To update postgres of the consumed position simply send this value over the websocket connection:
+The `nextlsn` is the Log Sequence Number (LSN) that points to the next record in the WAL. 
 
-```json
+### Step 4: ACK the offset 
+
+To update postgres of the consumed position simply send this value over the websocket connection:
+```javascript
+// Send over ws
 {"lsn":"0/170FCB0"}
 ```
 
 This will commit to Postgres that you've consumed upto the WAL position `0/170FCB0` so that in case of a failure of the websocket connection, the streaming resumes from this record.
 
-### Reset session
+### Reset stream
 
 The application has been designed as a single session use case; i.e. as of now there can be only one replication slot and corresponding stream that can be managed. Any calls to `/v1/init` will delete the existing replication slot, and create a new replication slot (alongwith the snapshot).
 
