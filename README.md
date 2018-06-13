@@ -1,15 +1,20 @@
 #PGDeltaStream
 A golang webserver to stream Postgres changes atleast-once over websockets using Postgres's logical decoding.
 
+![PGDeltaStream Short Demo](demo.gif "PGDeltaStream Short Demo")
+
 **Note:** Currently, pgdeltastream is ideal as a reference boilerplate golang server of how to connect to a postgres logical replication slot, take a snapshot and stream changes. It should not be used to expose websockets to arbitrary clients!
 
 ## Introduction
 
-PGDeltaStream uses Postgres's logical decoding feature to stream table changes over a websocket connection. It gives you endpoints to snapshot your current data and then start streaming after the snapshot guaranteeing that you don’t lose any event data. Clients can also ACK an offset value as frequently as they desire over the websocket connection. If a client reconnects, then the stream continues from the last ACKed offset.
+PGDeltaStream uses Postgres's logical decoding feature to stream table changes over a websocket connection. It is a stateless service and can be dropped next to any Postgres.
 
-This process guarantees atleast-once delivery of changes in postgres.
+PGDeltaStream gives you endpoints to snapshot your current data and then start streaming after the snapshot guaranteeing that you don’t lose any event data. Clients can also ACK an offset value as frequently as they desire over the websocket connection. If a client reconnects, then the stream continues from the last ACKed offset.
+
+This process **guarantees atleast-once delivery** of changes in postgres.
 
 ## How it works
+
 When a logical replication slot is created, Postgres creates a snapshot of the current state of the database and records the consistent point from where streaming is supposed to begin. The snapshot helps build an initial state of the database over which streaming changes can be applied.
 
 To facilitate retrieving data from the snapshot and to stream changes from then onwards, the workflow as been split into 3 phases:
@@ -39,10 +44,14 @@ $ docker run \
     -e SERVERHOST="localhost" \
     -e SERVERPORT=12312 \
     --net host \
-    -it sidmutha/pgdeltastream:v0.1.6
+    -it hasura/pgdeltastream:v0.1.6
 ```
 
 ## Usage
+
+### Video guide
+
+Watch the [video guide](https://youtube.com) to get a super fast introduction of how to use PGDeltaStream.
 
 ### Step 1: Init a replication slot
 
@@ -57,15 +66,15 @@ Keep note of this slot name to use in the next phases.
 
 ### Step 2 (optional): Initialise data from snapshot
 
-To get data from the snapshot, make a POST request to the `/v1/snapshot/data` endpoint with the slot name, table name, offset and limit:
+To get data from the snapshot, make a POST request to the `/v1/snapshot/data` endpoint with the slot name, table name, offset and limit. You can also specify the column and order you want the results to be sorted in:
 ```
 curl -X POST \
   http://localhost:12312/v1/snapshot/data \
   -H 'content-type: application/json' \
-  -d '{"slotName":"delta_face56", "table": "test_table", "offset":0, "limit":5}'
+  -d '{"slotName": "delta_face56", "table": "test_table", "offset": 0, "limit": 5, "order_by": {"column": "id", "order": "ASC"}}'
 ```
 
-The returned data will be a JSON list of rows:
+The returned data will be a JSON formatted list of rows:
 
 ```json
 [
@@ -176,4 +185,6 @@ This is so that it is easy to remember the slot name instead of a string of rand
 
 Contributions are welcome!
 
-Please check out the [contributing guide](CONTRIBUTING.md) to learn about setting up the development environment and building the project. Also look at the [issues](https://github.com/hasura/pgdeltastream/issues) page and help us out in improving PGDeltaStream!
+Read the [contributing guide](CONTRIBUTING.md) to learn about setting up the development environment, building the project and running tests.
+
+Do check the [issues](https://github.com/hasura/pgdeltastream/issues) page to see the backlog and help us in improving PGDeltaStream!

@@ -28,9 +28,16 @@ type SnapshotDataJSON struct {
 	// (not used as of now, will be useful in multi client setup)
 	SlotName string `json:"slotName" binding:"omitempty"`
 
-	Table  string `json:"table" binding:"required"`
-	Offset *uint  `json:"offset" binding:"exists"`
-	Limit  *uint  `json:"limit" binding:"exists"`
+	Table   string   `json:"table" binding:"required"`
+	Offset  *uint    `json:"offset" binding:"exists"`
+	Limit   *uint    `json:"limit" binding:"exists"`
+	OrderBy *OrderBy `json:"order_by" binding:"exists"`
+}
+
+type OrderBy struct {
+	Column string `json:"column" binding:"exists"`
+	Order  string `json:"order" binding:"exists"`
+	// Nulls TODO
 }
 
 type Wal2JSONEvent struct {
