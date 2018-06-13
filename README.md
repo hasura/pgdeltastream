@@ -1,7 +1,8 @@
-#PGDeltaStream
-A golang webserver to stream Postgres changes atleast-once over websockets using Postgres's logical decoding.
+# PGDeltaStream
 
-**Note:** Currently, pgdeltastream is ideal as a reference boilerplate golang server of how to connect to a postgres logical replication slot, take a snapshot and stream changes. It should not be used to expose websockets to arbitrary clients!
+A golang webserver to stream Postgres changes *atleast-once* over websockets, using Postgres's logical decoding feature.
+
+**Note:** Currently, pgdeltastream is ideal as a reference boilerplate golang server of how to connect to a postgres logical replication slot, take a snapshot and stream changes. It should not be used as-is to expose websockets to arbitrary clients!
 
 ## Introduction
 
