@@ -1,6 +1,6 @@
 # PGDeltaStream
 
-A Golang webserver to stream Postgres changes *atleast-once* over websockets, using Postgres's logical decoding feature.
+A Golang webserver to stream Postgres changes *atleast-once* over websockets, using Postgres' logical decoding feature.
 
 ![PGDeltaStream Short Demo](demo.gif "PGDeltaStream Short Demo")
 
@@ -52,7 +52,7 @@ $ docker run \
 
 ### Video guide
 
-Watch the [video guide](https://youtube.com) to get a super fast introduction of how to use PGDeltaStream.
+Watch the [video guide](https://youtu.be/pMQxbbzq_gw) to get a super fast introduction of how to use PGDeltaStream.
 
 ### Step 1: Init a replication slot
 
